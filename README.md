@@ -533,6 +533,10 @@ Untuk menggunakan program ini, kita harus menjalankan 2 file yaitu kita jalankan
 ```
 ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/Output%20server%20dan%20client.png?raw=true)
 
+Setelah terhubung antara server dan client maka akan otomatis langsung muncul folder baru 
+![alt text](?raw=true)
+
+
 ### Pilih Perintah
 
 ## a) **upload**.
@@ -699,3 +703,39 @@ ini digunakan untuk melakukan koneksi antaraa server dan client, Jika berhasil m
    ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/byebye.png?raw=true)
 
   Ini digunakan untuk memutus koneksi antara server dan client.
+
+## 3 Tambahan 
+a).  Untuk memodifikasi agar file yang diterima dimasukkan ke folder tertentu, Anda perlu menyesuaikan fungsi handle_upload pada server dan bagian terkait di bagian klien. Di server, ubah file_path untuk mencakup lokasi folder yang diinginkan. Sedangkan di bagian klien, pastikan Anda mengirimkan nama file dengan path relatif terhadap folder yang akan dituju di server.
+
+Server (handle_upload):
+
+```py
+file_path = os.path.join(UPLOAD_FOLDER, file_name)
+```
+
+Klien (upload function):
+
+```py
+file_name = os.path.basename(file_path)
+```
+
+Pastikan juga untuk mengonfigurasi UPLOAD_FOLDER di kedua sisi klien dan server agar sesuai dengan folder yang Anda inginkan.
+
+b) Untuk memberikan umpan balik tentang nama file dan ukuran file yang diterima, Anda bisa menambahkan pesan cetak di bagian yang sesuai dalam fungsi handle_upload di server. Pesan tersebut bisa mencantumkan nama file dan ukuran file yang berhasil diunggah.
+
+```py
+print(f"File {file_name} ({file_size} bytes) berhasil diunggah")
+```
+
+c). Jika pengirim mengirimkan file dengan nama yang sama dengan file yang telah dikirim sebelumnya, maka file yang baru akan menimpa file yang lama dengan nama yang sama. Hal ini dapat menyebabkan masalah jika Anda ingin menyimpan kedua file tersebut.
+
+Solusi untuk mengatasi masalah ini adalah dengan menambahkan nomor unik ke nama file baru sebelum ekstensi file, misalnya dengan menambahkan nomor urutan. Anda dapat memodifikasi fungsi handle_upload di server untuk menangani hal ini dengan cara menambahkan nomor unik ke nama file jika file dengan nama yang sama sudah ada di folder tujuan.
+
+```py
+counter = 1
+while os.path.exists(file_path):
+    new_file_name = f"{file_name_without_extension}_{counter}{file_extension}"
+    file_path = os.path.join(UPLOAD_FOLDER, new_file_name)
+    counter += 1
+```
+Dengan demikian, setiap file yang diunggah akan memiliki nama yang unik, sehingga tidak akan menimpa file yang sudah ada.
