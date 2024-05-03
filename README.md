@@ -559,13 +559,13 @@ Untuk menggunakan program ini, kita harus menjalankan 2 file yaitu kita jalankan
     Masukkan path file yang ingin diunggah: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt
     File hanyates.txt berhasil diunggah dalam 0.00 detik
     ```
-    ![alt text](?raw=true)
+    ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/uploadstep3.png?raw=true)
   
 ## b) **ls**.
     ```
     Pilih perintah (upload/ls/download/rm/size/connme/byebye): ls
     ```
-   ![alt text](?raw=true)
+   ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/lsstep_1.png?raw=true)
    
      ```
      Pilih perintah (upload/ls/download/rm/size/connme/byebye): ls
@@ -574,7 +574,7 @@ Untuk menggunakan program ini, kita harus menjalankan 2 file yaitu kita jalankan
         hanyates_1.txt - 33 bytes
      Total ukuran direktori: 66 bytes
      ```
-     ![alt text](?raw=true)
+![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/ls_step2.png?raw=true)
      
 ## c) **download**.
   
