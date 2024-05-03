@@ -19,88 +19,147 @@ Buat sebuah program file transfer protocol menggunakan socket programming dengan
 - byebye : ketika client menginputkan command tersebut, maka hubungan socket client akan diputus.
 - connme : ketika client menginputkan command tersebut, maka hubungan socket client akan terhubung.
 
+- 
+
 ## 1. Penjelasan
 
 **server.py**
 
 ```py
-
 import socket
-import os
 import struct
+import os
 import time
 
 TCP_IP = "127.0.0.1"
 TCP_PORT = 1234
 BUFFER_SIZE = 1024
+UPLOAD_FOLDER = "uploads"  # Folder untuk menyimpan file yang diunggah
 
+# Fungsi untuk menangani proses upload file dari client
 def handle_upload(conn):
     try:
+        # Kirim sinyal siap untuk menerima file
         conn.send(b"ready")
+        
+        # Terima ukuran nama file dan nama file
         file_name_size = struct.unpack("h", conn.recv(2))[0]
         file_name = conn.recv(file_name_size).decode()
+        
+        # Tentukan path file untuk menyimpan file yang diunggah
+        file_path = os.path.join(UPLOAD_FOLDER, file_name)
+        
+        # Jika file dengan nama yang sama sudah ada, tambahkan angka counter di belakang nama file
+        file_name_without_extension, file_extension = os.path.splitext(file_name)
+        counter = 1
+        while os.path.exists(file_path):
+            new_file_name = f"{file_name_without_extension}_{counter}{file_extension}"
+            file_path = os.path.join(UPLOAD_FOLDER, new_file_name)
+            counter += 1
+        
+        # Terima ukuran file
         file_size = struct.unpack("i", conn.recv(4))[0]
-        with open(file_name, "wb") as f:
+        
+        # Terima data file secara bertahap dan tulis ke file
+        with open(file_path, "wb") as f:
             bytes_received = 0
             while bytes_received < file_size:
                 data = conn.recv(BUFFER_SIZE)
                 f.write(data)
                 bytes_received += len(data)
+        
+        # Kirim sinyal bahwa file berhasil diterima
         conn.send(b"received")
+        
+        # Kirim waktu upload kembali ke client
         upload_time = time.time()
         conn.send(struct.pack("f", time.time() - upload_time))
-        print(f"{file_name} berhasil diunggah ({file_size} bytes) dalam {time.time() - upload_time:.2f} detik")
+        
+        # Tampilkan informasi tentang file yang diunggah
+        print(f"File {file_path} ({file_size} bytes) berhasil diunggah dalam {time.time() - upload_time:.2f} detik")
     except Exception as e:
         print(f"Error saat mengunggah file: {e}")
 
+# Fungsi untuk menangani permintaan daftar file dari client
 def handle_list_files(conn):
     try:
-        files = os.listdir()
+        # Dapatkan daftar file di folder upload
+        files = os.listdir(UPLOAD_FOLDER)
+        
+        # Kirim jumlah file ke client
         conn.send(struct.pack("i", len(files)))
+        
+        # Kirim informasi tentang setiap file ke client
         for file_name in files:
-            file_size = os.path.getsize(file_name)
+            file_size = os.path.getsize(os.path.join(UPLOAD_FOLDER, file_name))
             conn.send(struct.pack("i", len(file_name)))
             conn.send(file_name.encode())
             conn.send(struct.pack("i", file_size))
             conn.recv(BUFFER_SIZE)
-        total_size = sum(os.path.getsize(f) for f in files)
+        
+        # Kirim total ukuran direktori ke client
+        total_size = sum(os.path.getsize(os.path.join(UPLOAD_FOLDER, f)) for f in files)
         conn.send(struct.pack("i", total_size))
     except Exception as e:
         print(f"Error saat mengirim daftar file: {e}")
 
+# Fungsi untuk menangani proses unduh file dari client
 def handle_download(conn):
     try:
+        # Kirim sinyal siap untuk menerima permintaan unduh file
         conn.send(b"ready")
+        
+        # Terima nama file yang akan diunduh
         file_name_size = struct.unpack("h", conn.recv(2))[0]
         file_name = conn.recv(file_name_size).decode()
-        if os.path.exists(file_name):
-            conn.send(struct.pack("i", os.path.getsize(file_name)))
-            with open(file_name, "rb") as f:
+        
+        # Tentukan path file yang akan diunduh
+        file_path = os.path.join(UPLOAD_FOLDER, file_name)
+        
+        # Jika file ada, kirim ukuran file ke client dan kirim data file secara bertahap
+        if os.path.exists(file_path):
+            conn.send(struct.pack("i", os.path.getsize(file_path)))
+            with open(file_path, "rb") as f:
                 data = f.read(BUFFER_SIZE)
                 while data:
                     conn.send(data)
                     data = f.read(BUFFER_SIZE)
+            
+            # Kirim waktu unduh kembali ke client
             download_time = time.time()
             conn.recv(BUFFER_SIZE)
             conn.send(struct.pack("f", time.time() - download_time))
-            print(f"{file_name} berhasil diunduh")
+            print(f"File {file_name} berhasil diunduh")
         else:
+            # Jika file tidak ditemukan, kirim sinyal -1 ke client
             conn.send(struct.pack("i", -1)) 
     except Exception as e:
         print(f"Error saat mengunduh file: {e}")
 
+# Fungsi untuk menangani proses penghapusan file oleh client
 def handle_delete(conn):
     try:
         while True:
+            # Kirim sinyal siap untuk menerima permintaan hapus file
             conn.send(b"ready")
+            
+            # Terima nama file yang akan dihapus
             file_name_size = struct.unpack("h", conn.recv(2))[0]
             file_name = conn.recv(file_name_size).decode()
-            if os.path.exists(file_name):
-                os.remove(file_name)
+            
+            # Tentukan path file yang akan dihapus
+            file_path = os.path.join(UPLOAD_FOLDER, file_name)
+            
+            # Jika file ada, hapus file tersebut
+            if os.path.exists(file_path):
+                os.remove(file_path)
                 conn.send(struct.pack("i", 1))  
-                print(f"{file_name} berhasil dihapus")
+                print(f"File {file_name} berhasil dihapus")
             else:
+                # Jika file tidak ditemukan, kirim sinyal -1 ke client
                 conn.send(struct.pack("i", -1))  
+            
+            # Tanyakan kepada client apakah akan melanjutkan penghapusan file
             response = conn.recv(BUFFER_SIZE).decode()
             if response.upper() == "Y":
                 continue
@@ -109,31 +168,47 @@ def handle_delete(conn):
     except Exception as e:
         print(f"Error saat menghapus file: {e}")
 
+# Fungsi untuk menangani permintaan ukuran file dari client
 def handle_get_file_size(conn):
     try:
+        # Kirim sinyal siap untuk menerima permintaan ukuran file
         conn.send(b"ready")
+        
+        # Terima nama file yang akan diketahui ukurannya
         file_name_size = struct.unpack("h", conn.recv(2))[0]
         file_name = conn.recv(file_name_size).decode()
-        if os.path.exists(file_name):
-            file_size = os.path.getsize(file_name)
+        
+        # Tentukan path file yang akan diketahui ukurannya
+        file_path = os.path.join(UPLOAD_FOLDER, file_name)
+        
+        # Jika file ada, kirim ukuran file ke client
+        if os.path.exists(file_path):
+            file_size = os.path.getsize(file_path)
             conn.send(struct.pack("i", file_size))
         else:
+            # Jika file tidak ditemukan, kirim sinyal -1 ke client
             conn.send(struct.pack("i", -1))  
     except Exception as e:
         print(f"Error saat mendapatkan ukuran file: {e}")
 
+# Fungsi untuk menangani permintaan penambahan koneksi
 def handle_connme(conn):
     try:
+        # Kirim sinyal koneksi berhasil ditambahkan
         conn.send(b"connected")
         print(f"Koneksi dari {conn.getpeername()} berhasil ditambahkan")
     except Exception as e:
         print(f"Error saat menambahkan koneksi: {e}")
 
+# Fungsi untuk menangani setiap klien yang terhubung
 def handle_client(conn, addr):
     print(f"Terhubung dengan {addr}")
     while True:
         try:
+            # Terima perintah dari klien
             command = conn.recv(BUFFER_SIZE).decode()
+            
+            # Terapkan fungsi sesuai perintah yang diterima
             if command == "upload":
                 handle_upload(conn)
             elif command == "ls":
@@ -149,21 +224,36 @@ def handle_client(conn, addr):
             elif command == "byebye":
                 break
         except Exception as e:
+            # Tangani kesalahan yang terjadi saat menjalankan perintah dari klien
             print(f"Error saat menangani perintah dari {addr}: {e}")
             break
+    
+    # Tutup koneksi dengan klien setelah selesai
     conn.close()
     print(f"Koneksi dengan {addr} ditutup")
 
+# Fungsi utama untuk menjalankan server
 def main():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((TCP_IP, TCP_PORT))
-        s.listen()
-        print(f"Server FTP berjalan di {TCP_IP}:{TCP_PORT}")
-        while True:
-            print("Menunggu koneksi dari client...")
-            conn, addr = s.accept()
-            handle_client(conn, addr)
+    try:
+        # Buat folder uploads jika belum ada
+        if not os.path.exists(UPLOAD_FOLDER):
+            os.makedirs(UPLOAD_FOLDER)
+        
+        # Buat socket untuk server
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind((TCP_IP, TCP_PORT))
+            s.listen()
+            print(f"Server FTP berjalan di {TCP_IP}:{TCP_PORT}")
+            
+            # Terima koneksi dari klien dan tangani masing-masing koneksi
+            while True:
+                print("Menunggu koneksi dari client...")
+                conn, addr = s.accept()
+                handle_client(conn, addr)
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
 
+# Jalankan fungsi utama saat program dijalankan sebagai script
 if __name__ == "__main__":
     main()
 ```
@@ -178,14 +268,16 @@ if __name__ == "__main__":
 
 Program diatas adalah sebuah server sederhana untuk berinteraksi dengan client. Berikut analisis Kode program diatas :
 
-- Variabel Pendefinisian Anda menggunakan variabel TCP_IP dan TCP_PORT untuk menentukan alamat IP dan port yang digunakan oleh server. Selain itu, BUFFER_SIZE digunakan sebagai ukuran buffer untuk menerima data.
-- Fungsi Handle untuk Setiap Perintah Anda memiliki beberapa fungsi handle untuk menangani perintah dari klien. Ini termasuk fungsi untuk mengunggah file (handle_upload), menampilkan daftar file (handle_list_files), mengunduh file (handle_download), menghapus file (handle_delete), mendapatkan ukuran file (handle_get_file_size), dan menambahkan koneksi (handle_connme).
-- Fungsi Handle Client Fungsi ini menerima koneksi dari klien dan menangani perintah yang diterima dengan memanggil fungsi handle yang sesuai.
-- Fungsi Utama (Main) Fungsi main() mengikat server ke alamat dan port yang ditentukan, kemudian mulai mendengarkan koneksi masuk. Setiap kali koneksi diterima, fungsi handle_client() dipanggil untuk menangani koneksi tersebut.
-- Loop Utama Server berjalan dalam loop tak terbatas, terus mendengarkan koneksi baru dan menangani setiap koneksi masuk dengan memanggil fungsi handle_client(). 
-
-Dengan demikian, server FTP sederhana ini memungkinkan klien untuk berinteraksi dengannya untuk melakukan operasi dasar pada file
-
+- Import Library: Kode dimulai dengan mengimpor modul-modul yang diperlukan, termasuk socket, struct, os, dan time. Modul socket digunakan untuk komunikasi jaringan, struct untuk melakukan packing dan unpacking data, os untuk berinteraksi dengan sistem operasi terkait file dan folder, dan time untuk mengukur waktu eksekusi.
+- Inisialisasi Variabel: Variabel seperti TCP_IP, TCP_PORT, dan BUFFER_SIZE diinisialisasi dengan nilai tertentu yang akan digunakan dalam koneksi jaringan. UPLOAD_FOLDER merupakan folder tempat file-file yang diunggah akan disimpan.
+- Fungsi handle_upload(conn): Fungsi ini menangani proses upload file dari client ke server. Setelah menerima sinyal siap dari client, fungsi ini menerima nama dan ukuran file, kemudian menerima data file secara bertahap dan menuliskannya ke dalam file di folder UPLOAD_FOLDER. Jika ada file dengan nama yang sama, akan ditambahkan counter di belakang nama file untuk membedakannya. Setelah file selesai diunggah, fungsi mengirimkan sinyal berhasil dan waktu upload kembali ke client, serta mencetak informasi tentang file yang diunggah.
+- Fungsi handle_list_files(conn): Fungsi ini menangani permintaan daftar file dari client. Fungsi ini mengirimkan jumlah file, nama, dan ukuran setiap file di folder UPLOAD_FOLDER ke client, serta total ukuran direktori.
+- Fungsi handle_download(conn): Fungsi ini menangani permintaan unduh file dari client. Setelah menerima nama file yang diminta, fungsi ini mengirimkan ukuran file dan data file secara bertahap kepada client jika file tersedia di folder UPLOAD_FOLDER. Jika file tidak ditemukan, fungsi mengirimkan sinyal -1.
+- Fungsi handle_delete(conn): Fungsi ini menangani permintaan hapus file dari client. Setelah menerima nama file yang akan dihapus, fungsi ini menghapus file tersebut jika ada di folder UPLOAD_FOLDER. Jika file tidak ditemukan, fungsi mengirimkan sinyal -1. Fungsi juga meminta konfirmasi dari client sebelum menghapus file.
+- Fungsi handle_get_file_size(conn): Fungsi ini menangani permintaan ukuran file dari client. Setelah menerima nama file, fungsi ini mengirimkan ukuran file jika file tersebut ada di folder UPLOAD_FOLDER. Jika file tidak ditemukan, fungsi mengirimkan sinyal -1.
+- Fungsi handle_connme(conn): Fungsi ini menangani permintaan penambahan koneksi dari client. Fungsi ini mengirim sinyal bahwa koneksi berhasil ditambahkan dan mencetak informasi tentang koneksi yang baru ditambahkan.
+- Fungsi handle_client(conn, addr): Fungsi ini merupakan inti dari penanganan setiap koneksi dari client. Fungsi ini menerima perintah dari client dan memanggil fungsi yang sesuai untuk menangani perintah tersebut. Setelah selesai, koneksi ditutup.
+- Fungsi main(): Fungsi utama untuk menjalankan server. Fungsi ini membuat folder UPLOAD_FOLDER jika belum ada, kemudian membuat socket untuk menerima koneksi dari client. Setiap koneksi diterima, fungsi handle_client dipanggil untuk menangani koneksi tersebut.
 <br>
 
 **client.py**
@@ -197,78 +289,115 @@ import struct
 import os
 import time
 
+# Inisialisasi parameter koneksi
 TCP_IP = "127.0.0.1"
 TCP_PORT = 1234
 BUFFER_SIZE = 1024
 
+# Fungsi untuk mengunggah file ke server
 def upload(file_path, s):
     try:
+        # Mengirim perintah "upload" ke server
         s.send(b"upload")
+        # Menerima respons dari server
         s.recv(BUFFER_SIZE) 
+        # Mendapatkan nama file dari path
         file_name = os.path.basename(file_path)
+        # Mengirim panjang nama file ke server
         s.send(struct.pack("h", len(file_name)))
+        # Mengirim nama file ke server
         s.send(file_name.encode())
+        # Mendapatkan ukuran file
         file_size = os.path.getsize(file_path)
+        # Mengirim ukuran file ke server
         s.send(struct.pack("i", file_size))
+        # Membuka file untuk dikirim
         with open(file_path, "rb") as f:
+            # Membaca data dari file dan mengirim ke server
             data = f.read(BUFFER_SIZE)
             while data:
                 s.send(data)
                 data = f.read(BUFFER_SIZE)
+        # Menerima waktu yang dibutuhkan untuk mengunggah dari server
         s.recv(BUFFER_SIZE)  
         upload_time = struct.unpack("f", s.recv(4))[0]
+        # Menampilkan informasi pengunggahan
         print(f"File {file_name} berhasil diunggah dalam {upload_time:.2f} detik")
     except Exception as e:
         print(f"Error saat mengunggah file: {e}")
 
+# Fungsi untuk menampilkan daftar file di server
 def list_files(s):
     try:
+        # Mengirim perintah "ls" ke server
         s.send(b"ls")
+        # Menerima jumlah file dari server
         num_files = struct.unpack("i", s.recv(4))[0]
         print(f"Daftar file ({num_files}):")
+        # Menampilkan nama dan ukuran setiap file
         for _ in range(num_files):
             file_name_size = struct.unpack("i", s.recv(4))[0]
             file_name = s.recv(file_name_size).decode()
             file_size = struct.unpack("i", s.recv(4))[0]
             print(f"\t{file_name} - {file_size} bytes")
             s.send(b"1")
+        # Menerima total ukuran direktori dari server
         total_size = struct.unpack("i", s.recv(4))[0]
         print(f"Total ukuran direktori: {total_size} bytes")
     except Exception as e:
         print(f"Error saat menerima daftar file: {e}")
 
+# Fungsi untuk mengunduh file dari server
 def download(file_name, s):
     try:
+        # Mengirim perintah "download" ke server
         s.send(b"download")
+        # Menerima respons dari server
         s.recv(BUFFER_SIZE) 
+        # Mengirim panjang nama file ke server
         s.send(struct.pack("h", len(file_name)))
+        # Mengirim nama file ke server
         s.send(file_name.encode())
+        # Menerima ukuran file dari server
         file_size = struct.unpack("i", s.recv(4))[0]
+        # Memeriksa apakah file ditemukan di server
         if file_size == -1:
             print("File tidak ditemukan di server")
             return
+        # Membuka file untuk ditulis
         with open(file_name, "wb") as f:
             bytes_received = 0
+            # Menerima data dan menuliskannya ke file
             while bytes_received < file_size:
                 data = s.recv(BUFFER_SIZE)
                 f.write(data)
                 bytes_received += len(data)
+        # Menampilkan informasi pengunduhan
         print(f"File {file_name} berhasil diunduh")
+        # Mengirim konfirmasi ke server
         s.send(b"1")
+        # Menerima waktu yang dibutuhkan untuk mengunduh dari server
         download_time = struct.unpack("f", s.recv(4))[0]
         print(f"Waktu unduh: {download_time:.2f} detik")
     except Exception as e:
         print(f"Error saat mengunduh file: {e}")
 
+# Fungsi untuk menghapus file di server
 def delete(file_name, s):
     try:
+        # Mengirim perintah "rm" ke server
         s.send(b"rm")
+        # Menerima respons dari server
         s.recv(BUFFER_SIZE) 
+        # Mengirim panjang nama file ke server
         s.send(struct.pack("h", len(file_name)))
+        # Mengirim nama file ke server
         s.send(file_name.encode())
+        # Meminta konfirmasi pengguna untuk menghapus file
         confirm_delete = input(f"Apakah Anda yakin ingin menghapus {file_name}? (Y/N): ").upper()
         if confirm_delete == "Y":
             s.send(b"Y")
+            # Menerima status penghapusan dari server
             delete_status = struct.unpack("i", s.recv(4))[0]
             if delete_status == 1:
                 print(f"File {file_name} berhasil dihapus dari server")
@@ -279,39 +408,54 @@ def delete(file_name, s):
             print(f"Penghapusan file {file_name} dibatalkan")
     except Exception as e:
         print(f"Error saat menghapus file: {e}")
+        # Memeriksa apakah file ada di server
         file_exists = struct.unpack("i", s.recv(4))[0]
         if file_exists == -1:
             print("File tidak ditemukan di server")
             return
         
+# Fungsi untuk mendapatkan ukuran file di server
 def get_size(file_name, s):
     try:
+        # Mengirim perintah "size" ke server
         s.send(b"size")
+        # Menerima respons dari server
         s.recv(BUFFER_SIZE) 
+        # Mengirim panjang nama file ke server
         s.send(struct.pack("h", len(file_name)))
+        # Mengirim nama file ke server
         s.send(file_name.encode())
+        # Menerima ukuran file dari server
         file_size = struct.unpack("i", s.recv(4))[0]
+        # Memeriksa apakah file ditemukan di server
         if file_size == -1:
             print("File tidak ditemukan di server")
             return
+        # Menampilkan ukuran file
         print(f"Ukuran file {file_name}: {file_size} bytes")
     except Exception as e:
         print(f"Error saat mendapatkan ukuran file: {e}")
 
+# Fungsi untuk meminta server untuk menambahkan koneksi
 def connme(s):
     try:
+        # Mengirim perintah "connme" ke server
         s.send(b"connme")
+        # Menerima respons dari server
         response = s.recv(BUFFER_SIZE).decode()
         if response == "connected":
             print("Koneksi berhasil ditambahkan")
     except Exception as e:
         print(f"Error saat menambahkan koneksi: {e}")
 
+# Fungsi utama
 def main():
     try:
+        # Membuat socket dan terhubung ke server
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.connect((TCP_IP, TCP_PORT))
         print("Terhubung ke server")
+        # Loop untuk menerima perintah dari pengguna
         while True:
             command = input("\nPilih perintah (upload/ls/download/rm/size/connme/byebye): ").lower()
             if command == "upload":
@@ -331,6 +475,7 @@ def main():
             elif command == "connme":
                 connme(s)
             elif command == "byebye":
+                # Mengirim perintah "byebye" ke server untuk menutup koneksi
                 s.send(b"byebye")
                 print("Menutup koneksi")
                 break
@@ -339,6 +484,7 @@ def main():
     except Exception as e:
         print(f"Terjadi kesalahan: {e}")
     finally:
+        # Menutup koneksi saat program selesai
         s.close()
 
 if __name__ == "__main__":
@@ -356,18 +502,20 @@ Pilih perintah (upload/ls/download/rm/size/connme/byebye):
 
 Program diatas adalah sebuah client sederhana untuk berinteraksi dengan server. Berikut analisis Kode program diatas :
 
-- Fungsi Upload: Fungsi ini bertujuan untuk mengunggah file ke server. Klien mengirim perintah “upload” diikuti dengan nama file, ukuran file, dan data file secara bertahap. Setelah pengunggahan selesai, klien menerima waktu pengunggahan dari server dan mencetaknya.
-- Fungsi List Files: Fungsi ini meminta daftar file dari server dengan mengirim perintah “ls”. Setelah menerima daftar file, klien mencetak nama dan ukuran setiap file, serta total ukuran direktori.
-- Fungsi Download: Fungsi ini digunakan untuk mengunduh file dari server. Klien mengirim perintah “download” diikuti dengan nama file yang diinginkan. Klien kemudian menerima data file dari server dan menyimpannya ke dalam file lokal. Setelah selesai, klien menerima waktu pengunduhan dari server dan mencetaknya.
-- Fungsi Delete: Fungsi ini bertujuan untuk menghapus file dari server. Klien mengirim perintah “rm” diikuti dengan nama file yang ingin dihapus. Sebelum menghapus file, klien meminta konfirmasi dari pengguna. Setelah menerima konfirmasi, klien menerima status penghapusan dari server dan mencetak pesan sesuai.
-- Fungsi Get Size: Fungsi ini digunakan untuk mengetahui ukuran file. Klien mengirim perintah “size” diikuti dengan nama file yang ingin diketahui ukurannya. Klien menerima ukuran file dari server dan mencetaknya.
-- Fungsi Connme: Fungsi ini mengirim perintah “connme” ke server untuk meminta konfirmasi koneksi. Setelah menerima konfirmasi, klien mencetak pesan yang sesuai.
-- penggunaan perintah "byebye" dalam kode tersebut adalah untuk memberi tahu server bahwa klien ingin mengakhiri koneksi dengan aman. Ini adalah bagian dari protokol komunikasi antara klien dan server yang mengizinkan pengguna untuk menutup koneksi setelah selesai menggunakan layanan yang disediakan oleh server.
-- Fungsi Main: Fungsi utama yang mengelola logika utama klien. Dalam loop tak terbatas, klien dapat berinteraksi dengan server dengan memilih perintah yang diinginkan.
-- Exception Handling: Program memiliki penanganan kesalahan yang memadai untuk mengatasi situasi yang tidak terduga, seperti kegagalan koneksi atau kesalahan dalam operasi file.
-
-Jadi Secara keseluruhan, program ini memungkinkan pengguna untuk terhubung ke server FTP, melakukan berbagai operasi file, dan menerima umpan balik dari server sesuai dengan hasil dari setiap operasi.
-
+- upload(file_path, s):
+    Fungsi ini bertanggung jawab untuk mengunggah file ke server. Pertama, fungsi ini mengirimkan perintah "upload" ke server. Kemudian, ia menerima respons dari server untuk memastikan koneksi berhasil. Selanjutnya, ia mengambil nama file dari path yang diberikan, mengirimkan panjang nama file ke server, dan mengirimkan nama file itu sendiri. Setelah itu, ia mengambil ukuran file dan mengirimkannya ke server. Fungsi ini membuka file yang akan diunggah dalam mode baca biner ("rb") dan membaca data dalam ukuran buffer hingga selesai, mengirimkan data tersebut ke server. Terakhir, setelah file selesai diunggah, ia menerima waktu yang dibutuhkan untuk mengunggah file dari server dan menampilkannya.
+- list_files(s):
+    Fungsi ini bertanggung jawab untuk menampilkan daftar file yang ada di server beserta ukurannya. Pertama, ia mengirimkan perintah "ls" ke server. Kemudian, ia menerima jumlah file dari server. Setelah itu, ia menerima nama dan ukuran setiap file satu per satu dari server dan menampilkannya. Terakhir, ia menerima total ukuran direktori dari server dan menampilkannya.
+- download(file_name, s):
+    Fungsi ini digunakan untuk mengunduh file dari server. Pertama, ia mengirimkan perintah "download" ke server. Kemudian, ia menerima respons dari server untuk memastikan koneksi berhasil. Selanjutnya, ia mengirimkan panjang nama file yang akan diunduh dan nama file itu sendiri. Setelah itu, ia menerima ukuran file dari server. Jika file tidak ditemukan, ia menampilkan pesan kesalahan. Jika file ditemukan, ia membuka file untuk ditulis dalam mode baca biner ("wb") dan menerima data dari server hingga ukuran file terpenuhi. Terakhir, setelah file berhasil diunduh, ia mengirimkan konfirmasi ke server dan menerima waktu yang dibutuhkan untuk mengunduh file dari server.
+- delete(file_name, s):
+    Fungsi ini bertanggung jawab untuk menghapus file di server. Pertama, ia mengirimkan perintah "rm" ke server. Kemudian, ia menerima respons dari server untuk memastikan koneksi berhasil. Selanjutnya, ia mengirimkan panjang nama file yang akan dihapus dan nama file itu sendiri. Setelah itu, ia meminta konfirmasi dari pengguna untuk menghapus file. Jika pengguna menyetujui, ia mengirimkan konfirmasi ke server dan menerima status penghapusan dari server. Terakhir, ia menampilkan pesan berhasil atau gagal berdasarkan status penghapusan.
+- get_size(file_name, s):
+    Fungsi ini digunakan untuk mendapatkan ukuran file dari server. Pertama, ia mengirimkan perintah "size" ke server. Kemudian, ia menerima respons dari server untuk memastikan koneksi berhasil. Selanjutnya, ia mengirimkan panjang nama file yang ukurannya ingin diketahui dan nama file itu sendiri. Setelah itu, ia menerima ukuran file dari server. Jika file tidak ditemukan, ia menampilkan pesan kesalahan. Jika file ditemukan, ia menampilkan ukuran file tersebut.
+- connme(s):
+    Fungsi ini bertanggung jawab untuk meminta server untuk menambahkan koneksi. Pertama, ia mengirimkan perintah "connme" ke server. Kemudian, ia menerima respons dari server untuk memastikan koneksi berhasil ditambahkan. Jika berhasil, ia menampilkan pesan koneksi berhasil ditambahkan.
+- main():
+    Fungsi ini merupakan fungsi utama yang mengatur alur program. Pertama, ia membuat koneksi socket ke server. Selanjutnya, ia meminta pengguna untuk memasukkan perintah dan menangani setiap perintah yang dimasukkan dengan memanggil fungsi yang sesuai. Ketika pengguna memilih untuk keluar dengan perintah "byebye", ia mengirim perintah "byebye" ke server dan menutup koneksi.
 
 ## 2. Cara Menggunakan Setiap Command
 Untuk menggunakan program ini, kita harus menjalankan 2 file yaitu kita jalankan server.py terlebih dahulu kemudian menjalankan client.py
