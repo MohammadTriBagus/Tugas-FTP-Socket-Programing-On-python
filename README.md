@@ -18,8 +18,9 @@ Buat sebuah program file transfer protocol menggunakan socket programming dengan
 - size {nama file} : ketika client menginputkan command tersebut, maka server akan memberikan informasi file dalam satuan MB (Mega bytes) dengan acuan nama file yang diberikan pada parameter pertama.
 - byebye : ketika client menginputkan command tersebut, maka hubungan socket client akan diputus.
 - connme : ketika client menginputkan command tersebut, maka hubungan socket client akan terhubung.
-
-- 
+- Modifikasi agar file yang diterima dimasukkan ke folder tertentu
+- Modifikasi program agar memberikan feedback nama file dan filesize yang diterima.
+- Apa yang terjadi jika pengirim mengirimkan file dengan nama yang sama dengan file yang telah dikirim sebelumnya? Dapat menyebabkan masalah kah? Lalu bagaimana solusinya?    Implementasikan ke dalam program, solusi yang Anda berikan.
 
 ## 1. Penjelasan
 
@@ -519,8 +520,6 @@ Program diatas adalah sebuah client sederhana untuk berinteraksi dengan server. 
 
 ## 2. Cara Menggunakan Setiap Command
 Untuk menggunakan program ini, kita harus menjalankan 2 file yaitu kita jalankan server.py terlebih dahulu kemudian menjalankan client.py
-
-![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/Output%20server%20dan%20client.png?raw=true)
 ```
 > server.py
   Server FTP berjalan di 127.0.0.1:1234
@@ -532,110 +531,171 @@ Untuk menggunakan program ini, kita harus menjalankan 2 file yaitu kita jalankan
 
   Pilih perintah (upload/ls/download/rm/size/connme/byebye): 
 ```
+![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/Output%20server%20dan%20client.png?raw=true)
 
 ### Pilih Perintah
 
-- **upload**.
+## a) **upload**.
 
-```
-Pilih perintah (upload/ls/download/rm/size/connme/byebye): upload
-Masukkan path file yang ingin diunggah: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\tes.txt
-```
-
-Disini saya memasukkan file yang diunggahnya yaitu ``E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\tes.txt`` ini digunakan untuk mengupload file. Jika berhasil maka akan muncul output seperti dibawah ini :
-
-```
-File tes.txt berhasil diunggah dalam 0.02 detik
-```
-
-- **ls**.
-
-```
-Pilih perintah (upload/ls/download/rm/size/connme/byebye): ls
-Daftar file (4):
-        .git - 4096 bytes
-        client.py - 5477 bytes
-        server.py - 5034 bytes
-        tes.txt - 2 bytes
-Total ukuran direktori: 14609 bytes
-```
-
-- **download**.
+- Kita Ketik upload
   
-```
-Pilih perintah (upload/ls/download/rm/size/connme/byebye): download
-Masukkan nama file yang ingin diunduh: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\tes.txt 
-```
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): upload
+    Masukkan path file yang ingin diunggah:
+    ```
+    ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/uploadstep1.png?raw=true)
 
-Kemudian masukkan  filenya disini saya memasukkan di ``E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\tes.txt`` dan jika berhasil maka akan muncul output sebagai berikut :
+- Kemudian kita masukan file yang ingin diunggah 
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): upload
+    Masukkan path file yang ingin diunggah: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt
+    ```
+    ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/uploadstep2.png?raw=true)
 
-```
-File E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\tes.txt  berhasil diunduh
-Waktu unduh: 0.00 detik
-```
+    Disini saya memasukkan file yang diunggahnya yaitu ``E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt`` ini digunakan untuk mengupload file.      Jika berhasil maka akan muncul output seperti dibawah ini :
 
-- **rm**.
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): upload
+    Masukkan path file yang ingin diunggah: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt
+    File hanyates.txt berhasil diunggah dalam 0.00 detik
+    ```
+    ![alt text](?raw=true)
   
-```
-Pilih perintah (upload/ls/download/rm/size/connme/byebye): rm
-```
-
-ini digunakan untuk menghapus file yang ada difolder. disini saya menggunakan file_pathnta nya yaitu  E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\tes.txt , seperti dibawah ini :
-
-```
-Masukkan nama file yang ingin dihapus: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\tes.txt 
-```
-
-Kemudian sistemnya mengkonfirmasi, apakah yakin menghapus file tersebut atau tidak(Y/N) seperti dibawah ini :
-
-```
-Apakah Anda yakin ingin menghapus E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\tes.txt ? (Y/N): Y
-```
-
-Jika menekan ``Y`` maka akan memunculkan output seperti dibawah ini :
-
-```
-File E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\tes.txt  berhasil dihapus dari server
-```
-
-Jika menekan ``N`` maka akan memunculkan output seperti dibawah ini :
-
-```
-Penghapusan file  E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\tes.txt  dibatalkan
-```
-
-- **size**.
+## b) **ls**.
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): ls
+    ```
+   ![alt text](?raw=true)
+   
+     ```
+     Pilih perintah (upload/ls/download/rm/size/connme/byebye): ls
+     Daftar file (2):
+        hanyates.txt - 33 bytes
+        hanyates_1.txt - 33 bytes
+     Total ukuran direktori: 66 bytes
+     ```
+     ![alt text](?raw=true)
+     
+## c) **download**.
   
-```
-Pilih perintah (upload/ls/download/rm/size/connme/byebye): size
-```
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): download
+    Masukkan nama file yang ingin diunduh: 
+    ```
+  ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/download1.png?raw=true)
+  
+  Kemudian masukkan  filenya disini saya memasukkan di ``E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt`` 
+    
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): download
+    Masukkan nama file yang ingin diunduh: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt
+    ```
+   ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/download_2.png?raw=true)
 
-disini saya menggunakan ``E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\tes.txt`` seperti dibawah ini :
+    jika berhasil maka akan muncul output sebagai berikut :
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): download
+    Masukkan nama file yang ingin diunduh: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt
+    File E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt berhasil diunduh
+    Waktu unduh: 0.00 detik
+    ```
 
-```
-Masukkan nama file yang ingin diketahui ukurannya: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\tes.txt 
-Ukuran file E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\tes.txt : 2 bytes
-```
+  ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/download_3.png?raw=true)
+    
+    
+## d) **rm**.
+  
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): rm
+    ```
+   ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/rm1.png?raw=true)
 
-disini saya menggunakan byte untuk ukuran filenya
+   ini digunakan untuk menghapus file yang ada difolder. disini saya menggunakan file_pathnta nya yaitu E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas          2\uploads\hanyates.txt , seperti dibawah ini :
 
-- **connme**.
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): rm
+    Masukkan nama file yang ingin dihapus: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt
+    ```
+   ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/rm_2.png?raw=true)
+    
+   Kemudian sistemnya mengkonfirmasi, apakah yakin menghapus file tersebut atau tidak(Y/N) seperti dibawah ini :
 
-```
-Pilih perintah (upload/ls/download/rm/size/connme/byebye): connme
-```
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): rm
+    Masukkan nama file yang ingin dihapus: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt
+    Apakah Anda yakin ingin menghapus E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt? (Y/N): Y
+    ```
+   ![alt text](?raw=true)
+
+  Jika menekan ``Y`` maka akan memunculkan output seperti dibawah ini :
+
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): rm
+    Masukkan nama file yang ingin dihapus: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt
+    Apakah Anda yakin ingin menghapus E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt? (Y/N): Y
+    File E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt berhasil dihapus dari server
+    ```
+   ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/rm_hanyatesterhapus%20%20-%20Copy.png?raw=true)
+
+   Jika menekan ``N`` maka akan memunculkan output seperti dibawah ini :
+
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): rm
+    Masukkan nama file yang ingin dihapus: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads
+    Apakah Anda yakin ingin menghapus E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads? (Y/N): N
+    Penghapusan file E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads dibatalkan
+    ```
+   ![alt text](?raw=true)
+
+## e) **size**.
+  
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): size
+    ```
+  ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/Size_1.png?raw=true)
+  disini saya menggunakan `` E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt`` seperti dibawah ini :
+
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): size
+    Masukkan nama file yang ingin diketahui ukurannya: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt
+    ```
+  ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/size_2.png?raw=true)
+
+  ```
+  Pilih perintah (upload/ls/download/rm/size/connme/byebye): size
+  Masukkan nama file yang ingin diketahui ukurannya: E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt
+  Ukuran file E:\Semester 4\Pemrograman jaringan\Tugas Dosen\Tugas 2\uploads\hanyates.txt: 33 bytes
+  ```
+ ![alt text]( https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/Size_3.png?raw=true)
+  
+  disini saya menggunakan byte untuk ukuran filenya
+
+## f) **connme**.
+
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): connme
+    ```
+ ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/connme_1.png?raw=true)
 
 ini digunakan untuk melakukan koneksi antaraa server dan client, Jika berhasil maka akan muncul output dibawah ini :
 
-```
-Koneksi berhasil ditambahkan
-```
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): connme
+    Koneksi berhasil ditambahkan
+    ```
+   ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/connme_2.png?raw=true)
 
-- **byebye**.
+## g) **byebye**.
 
-```
-  Pilih perintah (upload/ls/download/rm/size/connme/byebye): byebye  
-  Menutup koneksi
-```
+    ```
+     Pilih perintah (upload/ls/download/rm/size/connme/byebye): byebye
+    ```
+   ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/bye_1.png?raw=true)
 
-Ini digunakan untuk memutus koneksi antara server dan client.
+    ```
+    Pilih perintah (upload/ls/download/rm/size/connme/byebye): byebye
+    Menutup koneksi
+    ```
+   ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/byebye.png?raw=true)
+
+  Ini digunakan untuk memutus koneksi antara server dan client.
