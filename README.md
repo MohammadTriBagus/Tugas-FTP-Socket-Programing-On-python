@@ -534,7 +534,7 @@ Untuk menggunakan program ini, kita harus menjalankan 2 file yaitu kita jalankan
 ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/Output%20server%20dan%20client.png?raw=true)
 
 - Setelah terhubung antara server dan client maka akan otomatis langsung muncul folder baru 
-![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset%20tambahan/folderbaru.png?raw=true)
+# ![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset%20tambahan/folderbaru.png?raw=true)
 
 
 ### Pilih Perintah
