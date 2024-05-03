@@ -520,6 +520,7 @@ Program diatas adalah sebuah client sederhana untuk berinteraksi dengan server. 
 ## 2. Cara Menggunakan Setiap Command
 Untuk menggunakan program ini, kita harus menjalankan 2 file yaitu kita jalankan server.py terlebih dahulu kemudian menjalankan client.py
 
+![alt text](https://github.com/MohammadTriBagus/Tugas-FTP-Socket-Programing-On-python/blob/main/Asset/Output%20server%20dan%20client.png?raw=true)
 ```
 > server.py
   Server FTP berjalan di 127.0.0.1:1234
